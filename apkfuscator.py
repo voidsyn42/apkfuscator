@@ -3,6 +3,7 @@
 # Author: voidsyn42
 # 📄 apkfuscator.py
 
+import os
 import re
 import random
 import string
@@ -39,6 +40,25 @@ def rename_methods(smali_code):
 def inject_junk_code(smali_code):
     junk = generate_junk_code()
     return smali_code.replace('.prologue', f'.prologue\n    {junk}')
+
+def process_directory(smali_dir, output_dir):
+    for root, dirs, files in os.walk(smali_dir):
+        for file in files:
+            if file.endswith('.smali'):
+                input_path = os.path.join(root, file)
+                rel_path = os.path.relpath(input_path, smali_dir)
+                output_path = os.path.join(output_dir, rel_path)
+                os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+                with open(input_path, 'r') as f:
+                    code = f.read()
+
+                code = obfuscate_string_literals(code)
+                code = rename_methods(code)
+                code = inject_junk_code(code)
+
+                with open(output_path, 'w') as f:
+                    f.write(code)
 
 def main():
     parser = argparse.ArgumentParser()
